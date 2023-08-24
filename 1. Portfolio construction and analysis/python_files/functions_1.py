@@ -506,26 +506,27 @@ def plot_ef(n_points, er, cov, dataframe=False, weight_constraints=1, style='.-'
             ax.plot([vol_gmv], [r_gmv], color='midnightblue', marker='o', markersize=10)
         return ax
 
-def backtest_portfolio(returns, portfolio_type, periods_per_year, starting_balance, starting_step=None, rolling_period=0, weights_column=False,
-                       riskfree_rate=0, weight_constraints=1, reweight_period=1, target_return=None, manual_weights=None,  *args, **kwargs):
+def backtest_portfolio(returns, portfolio_type, periods_per_year, starting_balance, starting_step=1, rolling_period=0, weights_column=False,
+                       riskfree_rate=0, weight_constraints=1, reweight_period=1, target_return=None, manual_weights=None, weighting=None,  *args, **kwargs):
     """
     Backtests different types of portfolios on a given set of returns and user-defined criteria.
 
     Parameters:
         returns (pd.DataFrame or pd.Series): A DataFrame or Series containing asset returns over time.
-        portfolio_type (str): The type of portfolio to backtest ('GMV', 'MSR', 'TR', 'EW', 'manual').
+        portfolio_type (str): The type of portfolio to backtest ('GMV', 'MSR', 'TR', 'EW', 'manual', 'other').
         periods_per_year (int): The number of periods in a year for the given returns dataset.
         starting_balance (float): The initial balance of the investment account.
-        starting_step (int or None, optional): The number of starting rows to calculate the initial covariance matrix.
+        starting_step (int , optional): Default is 1. The number of starting rows to calculate the initial covariance matrix.
             Required for 'MSR', 'GMV', and 'TR' portfolios, optional for 'EW' portfolio.
         rolling_period (int, optional): The rolling period for calculating covariance matrix. Default is 0 (use all available data).
-        weights_column (bool, optional): Whether to include a weight column in the resulting DataFrame. Default is False.
+        weights_column (bool, optional): Whether to include a weight column as type dictionary in the resulting DataFrame. Default is False.
         riskfree_rate (float, optional): The risk-free rate used in calculating the MSR portfolio. Default is 0.
         weight_constraints (float, optional): Weight constraint for portfolio optimization. Default is 1.
         reweight_period (int, optional): The period after which to update the covariance matrix and expected returns.
             Default is 1 (update every period).
         target_return (float or None, optional): Required for 'TR' portfolio. The targeted return for the portfolio. It will  be adjusted according to riskfree_rate
         manual_weights (list or numpy array or None, optional): List of weights. Required if portfolio type is 'manual (Manual Weights)
+        weighting (func or None, optional): A function for weighting scheme, default is None.
     Returns:
         pd.DataFrame: A DataFrame containing account value, returns, drawdowns, and optionally weights (if 'weights_column' is True).
 
@@ -541,6 +542,8 @@ def backtest_portfolio(returns, portfolio_type, periods_per_year, starting_balan
         raise ValueError("target_return cannot be None for Targeted Return Portfolio (TR)")
     if portfolio_type == 'manual' and manual_weights is None:
         raise ValueError(f"manual_weights cannot be None for Manual Weights Portfolio")
+    if portfolio_type == 'other' and weighting is None:
+        raise ValueError("weighting cannot be None for other portfolio types")
     dates = returns.index
     num_steps = len(dates)
     account_value = starting_balance
@@ -576,6 +579,7 @@ def backtest_portfolio(returns, portfolio_type, periods_per_year, starting_balan
                         expected_rets = annualize_returns(returns.iloc[:step], periods_per_year)
                     prev_cov = cov
                     prev_expected_rets = expected_rets
+            
 
             if portfolio_type == 'GMV':
                 weights = gmv(cov, weight_constraints=weight_constraints)
@@ -588,17 +592,19 @@ def backtest_portfolio(returns, portfolio_type, periods_per_year, starting_balan
                 weights = np.repeat(1/n, n)
             elif portfolio_type == 'manual':
                 weights = np.array(manual_weights)
+            elif portfolio_type == 'other':
+                weights = weighting(returns, **kwargs)
 
         portfolio_returns = portfolio_return(weights, returns.iloc[step])
         account_value *= 1 + portfolio_returns
 
         account_history[f'Account Value {portfolio_type}'].iloc[step] = account_value
         if weights_column:
-            account_history['Weights'].iloc[step] = weights
+            account_history['Weights'].at[account_history.index[step]] = {col: weight for col, weight in zip(returns.columns, weights)}
     dr = drawdown(account_history[[f'Account Value {portfolio_type}']].pct_change())
     backtest_result = {
         'Returns': account_history[f'Account Value {portfolio_type}'].pct_change(),
-        f'Account History {portfolio_type}': account_history[f'Account Value {portfolio_type}'],
+        f'Account History': account_history[f'Account Value {portfolio_type}'],
         'Drawdown': dr[f'Account Value {portfolio_type}', 'Drawdown'],
         'Previous Peak': dr[f'Account Value {portfolio_type}', 'Previous Peak']
     }
@@ -611,7 +617,6 @@ def backtest_portfolio(returns, portfolio_type, periods_per_year, starting_balan
         else:
             df = df.iloc[rolling_period:]
     return df
-
 
 def summary_stats(returns, periods_per_year, riskfree_rate=0):
     """
@@ -717,14 +722,13 @@ def combined_backtesting_result(r, portfolios, periods_per_year, rolling_period=
     
     return result_df
 
-def weights_change(weights, columns,  *args, **kwargs):
+def weights_change(weights, *args, **kwargs):
     """
     Returns a Dataframe which contains the assets as columns and weights as rows on a particular time period, or a multi indexed dataframes if there is
     more than one column in the 'weights'
 
     Parameters:
-        weights(pd.DataFrame, pd.Series): Weights Series or Dataframe
-        columns(pandas.index, optional): To name the columns in the resulted dataframe    
+        weights(pd.DataFrame, pd.Series): Weights Series or Dataframe, each row containig a dictionary of asset name and it's respective weight
     Returns:
         pd.DataFrame: A Dataframe containing the given columns as columns and their corresponding weights on each particular instant
     """
@@ -732,21 +736,22 @@ def weights_change(weights, columns,  *args, **kwargs):
         weights = pd.DataFrame(weights)
     dfs = []
     if len(weights.columns) == 1:
-        weights_df = pd.DataFrame(columns=columns)
+        weights_df = pd.DataFrame(columns=weights.iloc[0].keys())
         for date in weights.index:
-            weight = weights.loc[date]
-            weights_df.loc[date] = weight.values[0]
+            weights_df.loc[date] = weights.loc[date]
         result_df = weights_df
     else:
         for column in weights.columns:
+            columns = list(weights[column].iloc[0].keys())
             weights_df = pd.DataFrame(columns=columns)
             for date in weights.index:
-                weight = weights.loc[date]
-                weights_df.loc[date] = weight[column]
+                weight_dict = weights[column].loc[date]
+                weights_df.loc[date] = [weight_dict.get(col, 0.0) for col in columns]
             dfs.append(weights_df)
-        result_df = pd.concat(dfs, axis=1)
-        multi_index = pd.MultiIndex.from_product([weights.columns, columns])
-        result_df.columns = multi_index
+        
+    result_df = pd.concat(dfs, axis=1)
+    multi_index = pd.MultiIndex.from_product([weights.columns, columns])
+    result_df.columns = multi_index
     
     return result_df
 
