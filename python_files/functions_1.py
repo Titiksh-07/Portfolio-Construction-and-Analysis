@@ -4,7 +4,7 @@ import yfinance as yf
 from scipy.optimize import minimize
 
 
-def change_timeframe(df, timeframe, aggregation='sum'):
+def change_timeframe(df, timeframe, aggregation='sum', resample_index= True):
     """
     Resample a DataFrame of returns to a new timeframe.
 
@@ -15,6 +15,7 @@ def change_timeframe(df, timeframe, aggregation='sum'):
         df (DataFrame): The input DataFrame with datetime index.
         timeframe (str): The new timeframe for resampling, e.g., 'D' for daily, 'M' for monthly.
         aggregation (str, optional): Aggregation method to apply during resampling. Default is 'sum'.
+        resample_index(bool, optional): To resample the index according to the timeframe, Default is 'True'.
 
     Returns:
         DataFrame: A resampled DataFrame with the specified timeframe and aggregation.
@@ -25,7 +26,8 @@ def change_timeframe(df, timeframe, aggregation='sum'):
     column_names = df.columns
     aggregation_dict = {column: aggregation for column in column_names}
     resampled_df = df.resample(timeframe).agg(aggregation_dict)
-    resampled_df.index = resampled_df.index.to_period(timeframe)
+    if resample_index:
+        resampled_df.index = resampled_df.index.to_period(timeframe)
     return resampled_df
 
 
@@ -86,11 +88,14 @@ def get_returns_data(tickers: list, start=None, end=None, max_period=True, inter
     return result_df
 
 
-def local_returns_data():
+def local_returns_data(path=None):
     """
     Returns a dataframe containing the returns of assets
     """
-    r = pd.read_csv('Data/cleaned_data/historical_returns_data_1.csv', index_col='Date')
+    if path:
+        r = pd.read_csv(path, index_col= 'Date')
+    else:
+        r = pd.read_csv(r'Data/cleaned_data/historical_returns_data_1.csv', index_col='Date')
     r = pd.DataFrame(data=r)
     r.index = pd.to_datetime(r.index)
     return r
