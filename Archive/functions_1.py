@@ -341,7 +341,7 @@ def portfolio_vol(weights, covmat):
 
 from scipy.optimize import minimize
 
-def minimize_vol(target_return, er, cov, weight_constraints=1, max_asset_weight=1):
+def minimize_vol(target_return, er, cov, weight_constraints = 1):
     """
     Find the optimal portfolio weights that achieve the target return by minimizing portfolio volatility.
 
@@ -350,41 +350,30 @@ def minimize_vol(target_return, er, cov, weight_constraints=1, max_asset_weight=
         er (np.ndarray): Array of expected returns for each asset in the portfolio.
         cov (np.ndarray): Covariance matrix for the given assets.
         weight_constraints (float, optional): Default is 1. Weight constraint for the optimization. Anything above indicates leveraging.
-        max_asset_weight (float, optional): Maximum weight allowed for any single asset. Default is 1 (100%).
 
     Returns:
         np.ndarray: Optimal weights that achieve the target return.
     """
-    n = er.shape[0]  # number of assets
-    init_guess = np.repeat(1 / n, n)
+    n = er.shape[0] #number of assets
+    init_guess = np.repeat(1/n, n)
     bounds = ((0, weight_constraints),) * n
-
-    # Construct the constraints
-    weights_sum_to_constraint = {'type': 'eq',
-                                 'fun': lambda weights: np.sum(weights) - weight_constraints
-                                 }
+    #construct the constraints
+    weights_sum_to_contraint = {'type': 'eq',
+                        'fun': lambda weights: np.sum(weights) - weight_constraints
+    }
     return_is_target = {
         'type': 'eq',
         'args': (er,),
         'fun': lambda weights, er: target_return - portfolio_return(weights, er)
     }
-
-    # Additional constraint to limit individual asset weights
-    asset_weight_constraint = {'type': 'ineq',
-                               'fun': lambda weights: max_asset_weight - weights
-                               }
-
     weights = minimize(portfolio_vol, init_guess,
                        args=(cov,), method='SLSQP',
                        options={'disp': False},
-                       constraints=(weights_sum_to_constraint, return_is_target, asset_weight_constraint),
+                       constraints=(weights_sum_to_contraint,return_is_target),
                        bounds=bounds)
-
     return weights.x
 
-
-
-def msr(riskfree_rate, er, cov, weight_constraints=1, max_asset_weight=1):
+def msr(riskfree_rate, er, cov, weight_constraints=1):
     """
     Calculates the Maximum Sharpe Ratio (MSR) portfolio using the given risk-free rate, expected returns, and covariance matrix.
 
@@ -393,7 +382,6 @@ def msr(riskfree_rate, er, cov, weight_constraints=1, max_asset_weight=1):
         er (np.ndarray): Array of expected returns for each asset in the portfolio.
         cov (np.ndarray): Covariance matrix for the given assets.
         weight_constraints (float, optional): Default is 1. Weight constraint for the optimization. Anything above indicates leveraging.
-        max_asset_weight (float, optional): Maximum weight allowed for any single asset. Default is 1 (100%).
 
     Returns:
         pd.DataFrame: A DataFrame containing the MSR portfolio weights, portfolio return, volatility, and Sharpe ratio.
@@ -401,17 +389,10 @@ def msr(riskfree_rate, er, cov, weight_constraints=1, max_asset_weight=1):
     n = er.shape[0]
     init_guess = np.repeat(1/n, n)
     bounds = ((0.0, weight_constraints),) * n
-
-    # Construct the constraints
+    # construct the constraints
     weights_sum_to_constraint = {'type': 'eq',
-                                 'fun': lambda weights: np.sum(weights) - weight_constraints
-                                 }
-    
-    # Additional constraint to limit individual asset weights
-    asset_weight_constraint = {'type': 'ineq',
-                               'fun': lambda weights: max_asset_weight - weights
-                               }
-
+                        'fun': lambda weights: np.sum(weights) - weight_constraints
+    }
     def neg_sharpe(weights, riskfree_rate, er, cov):
         """
         Returns the negative of the sharpe ratio
@@ -420,20 +401,19 @@ def msr(riskfree_rate, er, cov, weight_constraints=1, max_asset_weight=1):
         r = portfolio_return(weights, er)
         vol = portfolio_vol(weights, cov)
         return -(r - riskfree_rate)/vol
-
+    
     weights = minimize(neg_sharpe, init_guess,
                        args=(riskfree_rate, er, cov), method='SLSQP',
                        options={'disp': False},
-                       constraints=(weights_sum_to_constraint, asset_weight_constraint),
+                       constraints=(weights_sum_to_constraint,),
                        bounds=bounds)
-
-    df = pd.DataFrame({'Weights': [weights.x],
+    df = pd.DataFrame({'Weights':[weights.x],
                        'Portfolio Return': portfolio_return(weights.x, er),
                        'Portfolio Volatility': portfolio_vol(weights.x, cov),
-                       'Sharpe Ratio': (portfolio_return(weights.x, er) - riskfree_rate) / portfolio_vol(weights.x, cov)})
+                       'Sharpe Ratio': (portfolio_return(weights.x, er)-riskfree_rate)/portfolio_vol(weights.x, cov)})
     return df
 
-def gmv(cov, er=None, riskfree_rate=0, weight_constraints=1, max_asset_weight=1):
+def gmv(cov, er=None, riskfree_rate=0, weight_constraints=1):
     """
     Calculates the Global Minimum Variance (GMV) portfolio based on the given covariance matrix and expected returns.
 
@@ -442,7 +422,6 @@ def gmv(cov, er=None, riskfree_rate=0, weight_constraints=1, max_asset_weight=1)
         er (np.ndarray, optional): Default is None. Expected returns for each asset in the portfolio.
         riskfree_rate (float, optional): Default is 0. Risk-free rate used in calculating the Sharpe ratio.
         weight_constraints (float, optional): Default is 1. Weight constraint for the optimization. Anything above indicates leveraging.
-        max_asset_weight (float, optional): Maximum weight allowed for any single asset. Default is 1 (100%).
 
     Returns:
         pd.DataFrame or np.ndarray: If expected returns (er) are not provided, returns the array of GMV portfolio weights.
@@ -450,7 +429,7 @@ def gmv(cov, er=None, riskfree_rate=0, weight_constraints=1, max_asset_weight=1)
 
     """
     n = cov.shape[0]
-    weights = msr(0, np.repeat(1, n), cov, weight_constraints, max_asset_weight).loc[0, 'Weights']
+    weights = msr(0, np.repeat(1, n), cov, weight_constraints).loc[0, 'Weights']
     if er is None:
         return weights
     else:
@@ -459,15 +438,16 @@ def gmv(cov, er=None, riskfree_rate=0, weight_constraints=1, max_asset_weight=1)
                        'Portfolio Volatility': portfolio_vol(weights, cov),
                        'Sharpe Ratio': (portfolio_return(weights, er)-riskfree_rate)/portfolio_vol(weights, cov)})
         return df
-def optimal_weights(n_points, er, cov, weight_constraints=1, max_asset_weight=1):
+
+def optimal_weights(n_points, er, cov, weight_constraints=1):
     """
     Returns a list of weights that represent a grid of n_points on the efficient frontier
     """
     target_rs = np.linspace(er.min(), er.max()*weight_constraints, n_points)
-    weights = [minimize_vol(target_return, er, cov, weight_constraints, max_asset_weight) for target_return in target_rs]
+    weights = [minimize_vol(target_return, er, cov, weight_constraints) for target_return in target_rs]
     return weights
 
-def plot_ef(n_points, er, cov, dataframe=False, weight_constraints=1, style='.-', max_asset_weight=1, legend=False, show_msr=False, riskfree_rate=0,
+def plot_ef(n_points, er, cov, dataframe=False, weight_constraints=1, style='.-', legend=False, show_msr=False, riskfree_rate=0,
              show_ew=False, show_gmv=False, figsize=(12,6)):
     """
     Plots the Efficient Frontier or returns a DataFrame if specified, based on expected returns and covariance matrix.
@@ -479,7 +459,6 @@ def plot_ef(n_points, er, cov, dataframe=False, weight_constraints=1, style='.-'
         dataframe (bool, optional): Default is False. If True, returns a DataFrame with portfolio details.
         weight_constraints (float, optional): Default is 1. The leverage factor for weight optimization.
         style (str, optional): Default is '.-'. Style of the efficient frontier line on the plot.
-        max_asset_weight (float, optional): Maximum weight allowed for any single asset. Default is 1 (100%).
         legend (bool, optional): Default is False. Show the legend on the plot.
         show_msr (bool, optional): Default is False. Show the Maximum Sharpe Ratio portfolio on the plot.
         riskfree_rate (float, optional): Default is 0. Risk-free rate used in Sharpe ratio calculations.
@@ -493,7 +472,7 @@ def plot_ef(n_points, er, cov, dataframe=False, weight_constraints=1, style='.-'
         Otherwise, returns None.
 
     """
-    weights = optimal_weights(n_points, er, cov, weight_constraints, max_asset_weight)
+    weights = optimal_weights(n_points, er, cov, weight_constraints)
     rets = [portfolio_return(w, er) for w in weights]
     vols = [portfolio_vol(w, cov) for w in weights]
     sharpe_ratio = [(ret - riskfree_rate)/vol for ret, vol in zip(rets, vols)]
@@ -513,7 +492,7 @@ def plot_ef(n_points, er, cov, dataframe=False, weight_constraints=1, style='.-'
         ax = ef.plot.line(x="Volatility", y="Returns", style=style, legend=legend, figsize=figsize)
         if show_msr:
             ax.set_xlim(left = 0)
-            w_msr = msr(riskfree_rate, er, cov, weight_constraints, max_asset_weight).loc[0, 'Weights']
+            w_msr = msr(riskfree_rate, er, cov, weight_constraints).loc[0, 'Weights']
             r_msr = portfolio_return(w_msr, er)
             vol_msr = portfolio_vol(w_msr, cov)
             #add CML
@@ -527,15 +506,14 @@ def plot_ef(n_points, er, cov, dataframe=False, weight_constraints=1, style='.-'
             vol_ew = portfolio_vol(w_ew, cov)
             ax.plot([vol_ew], [r_ew], color='goldenrod', marker='o', markersize=10)
         if show_gmv:
-            w_gmv = gmv(cov, weight_constraints=weight_constraints, max_asset_weight=max_asset_weight)
+            w_gmv = gmv(cov, weight_constraints=weight_constraints)
             r_gmv = portfolio_return(w_gmv, er)
             vol_gmv = portfolio_vol(w_gmv, cov)
             ax.plot([vol_gmv], [r_gmv], color='midnightblue', marker='o', markersize=10)
         return ax
 
 def backtest_portfolio(returns, portfolio_type, periods_per_year, starting_balance, starting_step=1, rolling_period=0, weights_column=False,
-                       riskfree_rate=0, weight_constraints=1, reweight_period=1, target_return=None, manual_weights=None, weighting=None,
-                         max_asset_weight=1,  *args, **kwargs):
+                       riskfree_rate=0, weight_constraints=1, reweight_period=1, target_return=None, manual_weights=None, weighting=None,  *args, **kwargs):
     """
     Backtests different types of portfolios on a given set of returns and user-defined criteria.
 
@@ -555,7 +533,6 @@ def backtest_portfolio(returns, portfolio_type, periods_per_year, starting_balan
         target_return (float or None, optional): Required for 'TR' portfolio. The targeted return for the portfolio. It will  be adjusted according to riskfree_rate
         manual_weights (list or numpy array or None, optional): List of weights. Required if portfolio type is 'manual (Manual Weights)
         weighting (func or None, optional): A function for weighting scheme, default is None.
-        max_asset_weight (float, optional): Maximum weight allowed for any single asset. Default is 1 (100%).
     Returns:
         pd.DataFrame: A DataFrame containing account value, returns, drawdowns, and optionally weights (if 'weights_column' is True).
 
@@ -611,12 +588,11 @@ def backtest_portfolio(returns, portfolio_type, periods_per_year, starting_balan
             
 
             if portfolio_type == 'GMV':
-                weights = gmv(cov, weight_constraints=weight_constraints, max_asset_weight=max_asset_weight)
+                weights = gmv(cov, weight_constraints=weight_constraints)
             elif portfolio_type == 'MSR':
-                weights = msr(riskfree_rate, expected_rets, cov, weight_constraints, max_asset_weight=max_asset_weight).loc[0, 'Weights']
+                weights = msr(riskfree_rate, expected_rets, cov, weight_constraints).loc[0, 'Weights']
             elif portfolio_type == 'TR':
-                weights = minimize_vol((target_return + riskfree_rate), expected_rets, cov, weight_constraints=weight_constraints,
-                                        max_asset_weight=max_asset_weight)
+                weights = minimize_vol((target_return + riskfree_rate), expected_rets, cov, weight_constraints=weight_constraints)
             elif portfolio_type == 'EW':
                 n = len(returns.columns)
                 weights = np.repeat(1/n, n)
@@ -677,8 +653,7 @@ def summary_stats(returns, periods_per_year, riskfree_rate=0):
     return df
 
 def combined_backtesting_result(r, portfolios, periods_per_year, rolling_period=0, riskfree_rate=0, weight_constraints=1,
-                                 reweight_period=1, starting_step=None, target_returns=None, weights_column=False, starting_balance=1000,
-                                  max_asset_weight=1, *args, **kwargs):
+                                 reweight_period=1, starting_step=None, target_returns=None, weights_column=False, starting_balance=1000, *args, **kwargs):
     """
     Combine and analyze backtesting results for multiple portfolios.
 
@@ -700,7 +675,6 @@ def combined_backtesting_result(r, portfolios, periods_per_year, rolling_period=
        target_returns (list or float, optional): List of target returns for TR portfolio or a float for a single target return.
        weights_column (bool, optional): Include a weight column in the resulting DataFrame. Default is False.
        starting_balance (float, optional): Initial balance of the investment account. Default is 1000
-       max_asset_weight (float, optional): Maximum weight allowed for any single asset. Default is 1 (100%).
        *args, **kwargs: Additional arguments.
 
     Returns:
@@ -736,13 +710,13 @@ def combined_backtesting_result(r, portfolios, periods_per_year, rolling_period=
         if portfolio != 'TR':
             df = backtest_portfolio(r, portfolio_type=portfolio, periods_per_year=periods_per_year, starting_balance=starting_balance, weights_column=weights_column,
                                     starting_step=starting_step, riskfree_rate=riskfree_rate, rolling_period=rolling_period, reweight_period=reweight_period,
-                                    weight_constraints=weight_constraints, max_asset_weight=max_asset_weight)
+                                    weight_constraints=weight_constraints)
             portfolio_dfs.append(df)
         else:
             for target_return in target_returns:
                 df = backtest_portfolio(r, portfolio_type=portfolio, periods_per_year=periods_per_year, starting_balance=starting_balance, weights_column=weights_column,
                                     starting_step=starting_step, riskfree_rate=riskfree_rate, rolling_period=rolling_period, reweight_period=reweight_period,
-                                    weight_constraints=weight_constraints, target_return=target_return, max_asset_weight=max_asset_weight)
+                                    weight_constraints=weight_constraints, target_return=target_return)
                 portfolio_dfs.append(df)
 
     # Combine all individual portfolio DataFrames into a single DataFrame
