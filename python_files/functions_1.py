@@ -787,3 +787,22 @@ def weights_change(weights, *args, **kwargs):
     
     return result_df
 
+def weights_mean(weights):
+    """
+    Returns a dataframe containing the mean weight of each asset in each portfolio.
+
+    Parameters:
+        weights(pd.DataFrame): A multiinex dataframe containing portfolios and assets as columns, and a datetime index. (dataframe obtained from weights_change
+        function.)
+    
+    Returns:
+        pd.DataFrame: A datframe containing portfolio names as columns and assets as index and containing each assets mean weights.
+    """
+    columns = weights.columns.get_level_values(0).unique()
+    index = weights.columns.get_level_values(1).unique()
+    df = pd.DataFrame(index= index, columns=columns)
+
+    for column in weights.columns.get_level_values(0).unique():
+        df[column] = weights[column].mean().round(6)
+
+    return df
