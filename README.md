@@ -1,7 +1,6 @@
 # Portfolio Construction and Analysis
 ## Objectives
-1. Select some assets based on their historical performances as portfolio.
-2. Execute the trades using IBKR API
+1. Analyze and backtest different portfolio strategies.
 
 
 ```python
