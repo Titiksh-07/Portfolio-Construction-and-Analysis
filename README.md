@@ -1,7 +1,4 @@
-# Portfolio-Construction-and-Analysis
-Portfolio Optimization and efficient frontier analysis
-Here I will import prices datasets of some assets from different classes and then clean them for analysis. The goal is to use diversification to minimize the downside and maximize the upside, I will use modern portfolio theory for this. This is my first project of this type so it may not be a great one but yeah let's see.
-# Portfolio Construction and Analysis -- Execution using IBKR API
+# Portfolio Construction and Analysis
 ## Objectives
 1. Select some assets based on their historical performances as portfolio.
 2. Execute the trades using IBKR API
@@ -24,9 +21,7 @@ util.startLoop()
 ```
 
 ## Assets
-First I will select the assets I want in my portfolio, this will be done manually although there can be advanced methods of doing this but right now I don't know how to do it and it's not my goal too, so I will first select a bunchg of ETFs from Yahoo Finance and then check their previous performances and run a backtest too, then I will execute the suitable portfolio weights in a simulated IBKR account which currently has $1000000 balance in it. I will rebalnce this portfolio on quarterly basis. This is the first portfolio I am running a forward test in but as I learn more and gather more knowlege and ideas I will do some much more advanced type of long term portfolio executions.
-
-So far I have developed all the tools I need in order to analyze a portfolio but now comes the main part which is deciding and then actually executing my ideas.
+First I will select the assets I want in my portfolio, this will be done manually although there can be advanced methods of doing this but right now I don't know how to do it and it's not my goal too, so I will first select a bunch of ETFs from Yahoo Finance and then check their previous performances and run a backtest too
 
 
 ```python
@@ -358,43 +353,6 @@ r_d_all
 </table>
 <p>11211 rows × 21 columns</p>
 </div>
-
-
-
-
-```python
-r_d_all.info()
-```
-
-    <class 'pandas.core.frame.DataFrame'>
-    DatetimeIndex: 11211 entries, 1980-01-03 to 2024-06-21
-    Data columns (total 21 columns):
-     #   Column  Non-Null Count  Dtype  
-    ---  ------  --------------  -----  
-     0   VGTSX   7084 non-null   float64
-     1   VIMSX   6563 non-null   float64
-     2   VIVAX   7966 non-null   float64
-     3   VISVX   6563 non-null   float64
-     4   NAESX   11211 non-null  float64
-     5   VWO     4853 non-null   float64
-     6   SPY     7904 non-null   float64
-     7   USRT    4312 non-null   float64
-     8   IAU     4881 non-null   float64
-     9   VGLT    3640 non-null   float64
-     10  VONG    3459 non-null   float64
-     11  IXUS    2931 non-null   float64
-     12  VCSH    3667 non-null   float64
-     13  VTIP    2937 non-null   float64
-     14  VCIT    3667 non-null   float64
-     15  TLT     5511 non-null   float64
-     16  BNDX    2781 non-null   float64
-     17  QQQ     6362 non-null   float64
-     18  BND     4330 non-null   float64
-     19  VXUS    3370 non-null   float64
-     20  EMB     4153 non-null   float64
-    dtypes: float64(21)
-    memory usage: 1.9 MB
-    
 
 
 ```python
