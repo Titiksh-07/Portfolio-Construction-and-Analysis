@@ -421,19 +421,7 @@ r_d
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -739,30 +727,9 @@ r_d.dropna(inplace=True)
 r_d
 ```
 
-    C:\Users\user\AppData\Local\Temp\ipykernel_7556\239412674.py:1: SettingWithCopyWarning: 
-    A value is trying to be set on a copy of a slice from a DataFrame
-    
-    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
-      r_d.dropna(inplace=True)
-    
-
-
-
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -1146,19 +1113,7 @@ r_d.corr().describe()
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -1428,19 +1383,7 @@ backtest
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead tr th {
-        text-align: left;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr>
@@ -1765,15 +1708,6 @@ sp500.index = sp500.index.date
 rets['S&P500'] = sp500
 ```
 
-    C:\Users\user\AppData\Local\Temp\ipykernel_7556\2219055362.py:4: SettingWithCopyWarning: 
-    A value is trying to be set on a copy of a slice from a DataFrame.
-    Try using .loc[row_indexer,col_indexer] = value instead
-    
-    See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
-      rets['S&P500'] = sp500
-    
-
-
 ```python
 fnc.summary_stats(rets, periods_per_year=252, riskfree_rate= 0.03)
 ```
@@ -1782,19 +1716,7 @@ fnc.summary_stats(rets, periods_per_year=252, riskfree_rate= 0.03)
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -1949,16 +1871,6 @@ weights_change = fnc.weights_change(weights)
 ```
 
 
-    Failed to start the Kernel. 
-    
-
-    Unable to start Kernel 'Data_Science_1 (Python 3.10.12)' due to a timeout waiting for the ports to get used. 
-    
-
-    View Jupyter <a href='command:jupyter.viewOutput'>log</a> for further details.
-
-
-
 ```python
 weights_mean = fnc.weights_mean(weights_change)
 weights_mean
@@ -1968,19 +1880,7 @@ weights_mean
 
 
 <div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
 
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
 <table border="1" class="dataframe">
   <thead>
     <tr style="text-align: right;">
@@ -2233,120 +2133,10 @@ weights_mean
 
 
 
-So far I have done a fine numbers of analysis, and what I think will suit best to me right now is a target returns portfolio, whether it's the mean of annual returns or a specific target return. Global minimum variance tends to focus too much on non volatile assets and if I regulate the max asset weight too much it tends to work poorly or very similiar to equally weighted. Maximum sharpe ratio is also fine but it's historical returns are not as good and if I am choosing something other than GMV, I would like to target a bit bigger returns.
+So far I have done a fine numbers of analysis, and what I think will suit best to me right now is a target returns portfolio, whether it's the mean of annual returns or a specific target return. Global minimum variance tends to focus too much on non volatile assets and if I regulate the max asset weight too much it tends to work poorly or very similiar to equally weighted. Maximum sharpe ratio is also fine but it's historical returns are not as good and if I am choosing something other than GMV, I would like to target a bit higher returns.
 
 I know these returns aren't as good but relative to the volatility of the portfolios they seem great. I would like do some advanced level portfolio contruction later, the main problem I faced here was choosing assets and having enough data to backtest, maybe there are advanced ways to filter markets and select a good number of assets which meets my criteria, but right now historical data is a problem too.
 
 In future if I learn a way to create alpha then maybe it will be much better. But still I think these analysis are great and can be of good use.
 
-## IBKR Execution
 
-
-```python
-ib = IB()
-```
-
-
-```python
-ib.connect()
-```
-
-
-```python
-ib.positions()
-```
-
-
-
-
-    []
-
-
-
-
-```python
-assets = annu_r.index
-weights = fnc.minimize_vol(target_return=0.08, er = annu_r, cov = cov, max_asset_weight=0.2)
-```
-
-
-```python
-contracts = []
-for asset in assets:
-    contract = Stock(asset, "SMART", "USD")
-    contracts.append(contract)
-```
-
-
-```python
-contracts
-```
-
-
-
-
-    [Stock(symbol='NAESX', exchange='SMART', currency='USD'),
-     Stock(symbol='VIVAX', exchange='SMART', currency='USD'),
-     Stock(symbol='SPY', exchange='SMART', currency='USD'),
-     Stock(symbol='VGTSX', exchange='SMART', currency='USD'),
-     Stock(symbol='VIMSX', exchange='SMART', currency='USD'),
-     Stock(symbol='VISVX', exchange='SMART', currency='USD'),
-     Stock(symbol='QQQ', exchange='SMART', currency='USD'),
-     Stock(symbol='TLT', exchange='SMART', currency='USD'),
-     Stock(symbol='IAU', exchange='SMART', currency='USD'),
-     Stock(symbol='VWO', exchange='SMART', currency='USD'),
-     Stock(symbol='BND', exchange='SMART', currency='USD'),
-     Stock(symbol='USRT', exchange='SMART', currency='USD'),
-     Stock(symbol='EMB', exchange='SMART', currency='USD'),
-     Stock(symbol='VCSH', exchange='SMART', currency='USD'),
-     Stock(symbol='VCIT', exchange='SMART', currency='USD'),
-     Stock(symbol='VGLT', exchange='SMART', currency='USD'),
-     Stock(symbol='VONG', exchange='SMART', currency='USD'),
-     Stock(symbol='VXUS', exchange='SMART', currency='USD'),
-     Stock(symbol='VTIP', exchange='SMART', currency='USD'),
-     Stock(symbol='IXUS', exchange='SMART', currency='USD'),
-     Stock(symbol='BNDX', exchange='SMART', currency='USD')]
-
-
-
-
-```python
-data = ib.reqMktData(contracts[2])
-```
-
-
-    ---------------------------------------------------------------------------
-
-    ConnectionError                           Traceback (most recent call last)
-
-    Cell In[38], line 1
-    ----> 1 data = ib.reqMktData(contracts[2])
-    
-
-    File c:\Users\user\miniconda3\envs\Data_Science_1\lib\site-packages\ib_insync\ib.py:1234, in IB.reqMktData(self, contract, genericTickList, snapshot, regulatorySnapshot, mktDataOptions)
-       1181 def reqMktData(
-       1182         self, contract: Contract, genericTickList: str = '',
-       1183         snapshot: bool = False, regulatorySnapshot: bool = False,
-       1184         mktDataOptions: List[TagValue] = []) -> Ticker:
-       1185     """
-       1186     Subscribe to tick data or request a snapshot.
-       1187     Returns the Ticker that holds the market data. The ticker will
-       (...)
-       1232         mktDataOptions: Unknown
-       1233     """
-    -> 1234     reqId = self.client.getReqId()
-       1235     ticker = self.wrapper.startTicker(reqId, contract, 'mktData')
-       1236     self.client.reqMktData(
-       1237         reqId, contract, genericTickList, snapshot,
-       1238         regulatorySnapshot, mktDataOptions)
-    
-
-    File c:\Users\user\miniconda3\envs\Data_Science_1\lib\site-packages\ib_insync\client.py:160, in Client.getReqId(self)
-        158 """Get new request ID."""
-        159 if not self.isReady():
-    --> 160     raise ConnectionError('Not connected')
-        161 newId = self._reqIdSeq
-        162 self._reqIdSeq += 1
-    
-
-    ConnectionError: Not connected
